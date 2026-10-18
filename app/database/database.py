@@ -2,7 +2,9 @@ import os
 
 from sqlalchemy import URL, create_engine
 from sqlalchemy.orm import DeclarativeBase
+from dotenv import load_dotenv
 
+load_dotenv()
 class Base(DeclarativeBase):
     pass
 

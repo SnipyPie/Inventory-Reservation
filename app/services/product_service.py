@@ -3,9 +3,17 @@ from sqlalchemy.orm import Session
 from app.database.database import engine
 from sqlalchemy import select, func
 
-products=[]
 
-def create_product(product_id, name, price, quantity, sku):
+def create_product(product_id: int, name: str, price: float, quantity: int, sku: str):
+    name = name.strip()
+    sku = sku.strip()
+    if not name:
+        raise ValueError("Product name cannot be empty.")
+    if not price or price <0 :
+        raise ValueError("Price should be positive value")
+    if quantity < 0:
+        raise ValueError("Quantity cannot be negative.")
+    
     product = Product(
         id=product_id,
         name=name,
@@ -24,7 +32,7 @@ def get_product(product_id: int):
     with Session(engine) as session:
         return session.get(Product, product_id)
     
-def get_products_by_name(name):
+def get_products_by_name(name: str):
     with Session(engine) as session:
         statement = (
             select(Product)
