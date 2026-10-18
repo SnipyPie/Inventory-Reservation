@@ -1,6 +1,7 @@
 from app.models.product import Product
 from sqlalchemy.orm import Session
 from app.database.database import engine
+from sqlalchemy import select, func
 
 products=[]
 
@@ -19,39 +20,49 @@ def create_product(product_id, name, price, quantity, sku):
 
     return product
 
-def get_product(name):
-    for product in products:
-        if product.name.lower()==name.lower():
-            return product
-    return None
-
-matching_names=[]
+def get_product(product_id: int):
+    with Session(engine) as session:
+        return session.get(Product, product_id)
+    
 def get_products_by_name(name):
-    for product in products:
-        if product.name.lower()==name.lower():
-            matching_names.append(product)
-    return matching_names
+    with Session(engine) as session:
+        statement = (
+            select(Product)
+            .where(func.lower(Product.name) == name.lower())
+            .order_by(Product.id)
+        )
+        return session.scalars(statement).all()
+
 
 def get_all_products():
-    return products
+    with Session(engine) as session:
+        statement = select(Product).order_by(Product.id)
+        return session.scalars(statement).all()
 
-def delete_product(product_id: str):
-    for product in products:
-        if product.id==product_id:
-            products.remove(product)
-            return True
-    return False
+def delete_product(product_id: int):
+    with Session(engine) as session:
+        product = session.get(Product, product_id)
 
-def update_product(product_id: str,updates: dict):
-    for product in products:
-        if product.id==product_id:
-            if "name"in updates:
-                product.name=updates["name"]
-            if "price" in updates:
-                product.price=updates["price"]
-            if "quantity" in updates:
-                product.quantity=updates["quantity"]
-            if "sku" in updates:
-                product.sku=updates["sku"]
-            return product
-        return None
+        if product is None:
+            return False
+
+        session.delete(product)
+        session.commit()
+        return True
+
+def update_product(product_id: int, updates: dict):
+    allowed_fields = {"name", "price", "quantity", "sku"}
+
+    with Session(engine) as session:
+        product = session.get(Product, product_id)
+
+        if product is None:
+            return None
+
+        for field, value in updates.items():
+            if field in allowed_fields:
+                setattr(product, field, value)
+
+        session.commit()
+        session.refresh(product)
+        return product
