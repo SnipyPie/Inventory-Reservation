@@ -1,10 +1,22 @@
 from app.models.product import Product
+from sqlalchemy.orm import Session
+from app.database.database import engine
 
 products=[]
 
-def create_product(name,price,quantity,sku):
-    product=Product(name,price,quantity,sku)
-    products.append(product)
+def create_product(product_id, name, price, quantity, sku):
+    product = Product(
+        id=product_id,
+        name=name,
+        price=price,
+        quantity=quantity,
+        sku=sku,
+    )
+    with Session(engine) as session:
+        session.add(product)
+        session.commit()
+        session.refresh(product)
+
     return product
 
 def get_product(name):
