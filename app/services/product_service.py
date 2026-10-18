@@ -60,7 +60,29 @@ def delete_product(product_id: int):
 
 def update_product(product_id: int, updates: dict):
     allowed_fields = {"name", "price", "quantity", "sku"}
+    updates = {
+        key: value
+        for key, value in updates.items()
+        if key in allowed_fields
+    }
 
+    if "name" in updates and isinstance(updates["name"], str):
+        updates["name"] = updates["name"].strip()
+
+    if "sku" in updates and isinstance(updates["sku"], str):
+        updates["sku"] = updates["sku"].strip()
+    
+    if "price" in updates:
+        if not isinstance(updates["price"], (int, float)):
+            raise ValueError("Price must be numeric")
+        if updates["price"] < 0:
+            raise ValueError("Price cannot be negative")
+
+    if "quantity" in updates:
+        if not isinstance(updates["quantity"], int) or isinstance(updates["quantity"], bool):
+            raise ValueError("Quantity must be an integer")
+        if updates["quantity"] < 0:
+            raise ValueError("Quantity cannot be negative")
     with Session(engine) as session:
         product = session.get(Product, product_id)
 
