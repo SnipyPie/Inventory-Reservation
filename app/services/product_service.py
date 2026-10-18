@@ -9,8 +9,8 @@ def create_product(product_id: int, name: str, price: float, quantity: int, sku:
     sku = sku.strip()
     if not name:
         raise ValueError("Product name cannot be empty.")
-    if not price or price <0 :
-        raise ValueError("Price should be positive value")
+    if price <0 :
+        raise ValueError("Price cannot be negative")
     if quantity < 0:
         raise ValueError("Quantity cannot be negative.")
     

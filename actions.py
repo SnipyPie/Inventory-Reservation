@@ -15,9 +15,9 @@ def create_product_action():
             break
         except ValueError:
             print("Invalid input. PLease enter digit/digits")
-        if product_service.get_product(product_id):
-            print(f"Product with ID {product_id} already exists.")
-            return
+    if product_service.get_product(product_id):
+        print(f"Product with ID :-{product_id} already exists.")
+        return
 
     name = input("Enter the product name: ")
 
@@ -25,7 +25,7 @@ def create_product_action():
         price = float(input("Enter price: "))
         quantity = int(input("Enter quantity: "))
     except ValueError:
-        print("Price must be a number and quantity must be a whole number.")
+        print("Price and quantity must be a whole number.")
         return
 
     sku = input("Enter the SKU: ")
