@@ -1,26 +1,39 @@
+from decimal import Decimal
 from app.models.product import Product
 from sqlalchemy.orm import Session
 from app.database.database import engine
 from sqlalchemy import select, func
 
 
-def create_product(product_id: int, name: str, price: float, quantity: int, sku: str):
+def create_product(
+    name: str,
+    sku: str,
+    price: Decimal,
+    shelf_life_days: int,
+):
     name = name.strip()
     sku = sku.strip()
+
     if not name:
         raise ValueError("Product name cannot be empty.")
-    if price <0 :
-        raise ValueError("Price cannot be negative")
-    if quantity < 0:
-        raise ValueError("Quantity cannot be negative.")
-    
+
+    if not sku:
+        raise ValueError("Product SKU cannot be empty.")
+
+    if price < 0:
+        raise ValueError("Price cannot be negative.")
+
+    if shelf_life_days <= 0:
+        raise ValueError("Shelf life must be greater than zero.")
+
     product = Product(
-        id=product_id,
         name=name,
-        price=price,
-        quantity=quantity,
         sku=sku,
+        price=price,
+        shelf_life_days=shelf_life_days,
+        quantity=0,
     )
+
     with Session(engine) as session:
         session.add(product)
         session.commit()
@@ -68,21 +81,20 @@ def update_product(product_id: int, updates: dict):
 
     if "name" in updates and isinstance(updates["name"], str):
         updates["name"] = updates["name"].strip()
+        if not updates["name"]:
+            raise ValueError("Product name cannot be empty.")
 
     if "sku" in updates and isinstance(updates["sku"], str):
         updates["sku"] = updates["sku"].strip()
+        if not updates["sku"]:
+            raise ValueError("Product sku cannot be empty.")
     
     if "price" in updates:
         if not isinstance(updates["price"], (int, float)):
             raise ValueError("Price must be numeric")
-        if updates["price"] < 0:
-            raise ValueError("Price cannot be negative")
-
-    if "quantity" in updates:
-        if not isinstance(updates["quantity"], int) or isinstance(updates["quantity"], bool):
-            raise ValueError("Quantity must be an integer")
-        if updates["quantity"] < 0:
-            raise ValueError("Quantity cannot be negative")
+        if updates["price"] < 0 or not updates["price"]:
+            raise ValueError("Price cannot be negative or empty")
+        
     with Session(engine) as session:
         product = session.get(Product, product_id)
 

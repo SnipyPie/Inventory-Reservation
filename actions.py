@@ -1,5 +1,7 @@
 from app.services import product_service
-
+from decimal import Decimal, InvalidOperation
+from app.services import inventory_service, product_service
+from datetime import date
 
 def display_product(product):
     print(
@@ -9,33 +11,86 @@ def display_product(product):
     )
 
 def create_product_action():
-    while True:
-        try:
-            product_id = int(input("\nEnter the product ID: "))
-            break
-        except ValueError:
-            print("Invalid input. PLease enter digit/digits")
-    if product_service.get_product(product_id):
-        print(f"Product with ID :-{product_id} already exists.")
-        return
-
     name = input("Enter the product name: ")
-
-    try:
-        price = float(input("Enter price: "))
-        quantity = int(input("Enter quantity: "))
-    except ValueError:
-        print("Price and quantity must be a whole number.")
-        return
-
     sku = input("Enter the SKU: ")
 
     try:
-        product_service.create_product(product_id, name, price, quantity, sku)
-        print("Product created successfully.")
+        price = Decimal(input("Enter price: "))
+    except InvalidOperation:
+        print("Price must be a number.")
+        return
+
+    if price < 0:
+        print("Price cannot be negative.")
+        return
+
+    try:
+        shelf_life_days = int(input("Enter shelf life in days: "))
+    except ValueError:
+        print("Shelf life must be a whole number.")
+        return
+
+    try:
+        product = product_service.create_product(
+            name=name,
+            sku=sku,
+            price=price,
+            shelf_life_days=shelf_life_days,
+        )
+        print(f"Product created successfully. Its ID is {product.id}.")
     except ValueError as error:
         print(error)
 
+def add_inventory_batch_action():
+    try:
+        product_id = int(input("Enter the product ID: "))
+    except ValueError:
+        print("Product ID must be a whole number.")
+        return
+
+    product = product_service.get_product(product_id)
+
+    if product is None:
+        print("Product not found.")
+        return
+
+    try:
+        quantity = int(input("Enter the batch quantity: "))
+    except ValueError:
+        print("Quantity must be a whole number.")
+        return
+
+    stock_in_text = input(
+        "Enter stock-in date as YYYY-MM-DD, or press Enter for today: "
+    ).strip()
+
+    if stock_in_text:
+        try:
+            stock_in_date = date.fromisoformat(stock_in_text)
+        except ValueError:
+            print("Enter the date in YYYY-MM-DD format.")
+            return
+    else:
+        stock_in_date = None
+
+    try:
+        batch = inventory_service.add_inventory_batch(
+            product_id=product_id,
+            quantity=quantity,
+            stock_in_date=stock_in_date,
+        )
+    except ValueError as error:
+        print(error)
+        return
+
+    if batch is None:
+        print("Product not found.")
+        return
+
+    print(
+        f"Batch {batch.id} added for {product.name}. "
+        f"It expires on {batch.expiry_date}."
+    )
 
 def get_product_action():
     search_by = input("Search by (1) ID or (2) name? ")
@@ -145,16 +200,15 @@ def update_product_action():
     if product is None:
         print("Product not found.")
         return
-
+    display_product(product)
     updates = {}
 
     while True:
         print("\nWhat details do you want to update?")
         print("1. name")
         print("2. price")
-        print("3. quantity")
-        print("4. SKU")
-        print("5. Done")
+        print("3. SKU")
+        print("4. Done")
 
         update_choice = input("Select: ")
 
@@ -168,15 +222,9 @@ def update_product_action():
                 print("Price must be a number.")
 
         elif update_choice == "3":
-            try:
-                updates["quantity"] = int(input("Enter the updated quantity: "))
-            except ValueError:
-                print("Quantity must be a whole number.")
-
-        elif update_choice == "4":
             updates["sku"] = input("Enter the updated SKU: ")
 
-        elif update_choice == "5":
+        elif update_choice == "4":
             break
 
         else:

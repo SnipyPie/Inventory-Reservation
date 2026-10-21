@@ -15,6 +15,6 @@ engine = create_engine(
         password=os.environ["DB_PASSWORD"],
         host="localhost",
         port=5432,
-        database="postgres",
+        database="inventory_db",
     )
 )

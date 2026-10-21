@@ -1,18 +1,39 @@
-from sqlalchemy import Float, Integer, String
-from sqlalchemy.orm import Mapped, mapped_column
+from __future__ import annotations
+
+from decimal import Decimal
+
+from sqlalchemy import CheckConstraint, Integer, Numeric, String
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database.database import Base
 
+from typing import TYPE_CHECKING
 
+if TYPE_CHECKING:
+    from .inventory_batch import InventoryBatch
 class Product(Base):
     __tablename__ = "products"
-
-    id: Mapped[int] = mapped_column(
-        Integer,
-        primary_key=True,
-        autoincrement=False,
+    __table_args__ = (
+        CheckConstraint("price >= 0", name="ck_products_price_nonnegative"),
+        CheckConstraint(
+            "shelf_life_days > 0",
+            name="ck_products_shelf_life_positive",
+        ),
+        CheckConstraint(
+            "quantity >= 0",
+            name="ck_products_quantity_nonnegative",
+        ),
     )
-    name: Mapped[str | None] = mapped_column(String, nullable=True)
-    price: Mapped[float] = mapped_column(Float, nullable=False)
-    quantity: Mapped[int | None] = mapped_column(Integer, nullable=True)
-    sku: Mapped[str | None] = mapped_column(String, nullable=True)
+
+    # IDs are generated automatically by postgres
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    
+    name: Mapped[str] = mapped_column(String(200), nullable=False)
+    sku: Mapped[str] = mapped_column(String(50), nullable=False, unique=True)
+    price: Mapped[Decimal] = mapped_column(Numeric(10, 2), nullable=False)
+    shelf_life_days: Mapped[int] = mapped_column(Integer, nullable=False)
+    quantity: Mapped[int] = mapped_column(Integer,nullable=False,default=0,server_default="0",)
+    # One product can have multiple inventory batches.
+    inventory_batches: Mapped[list[InventoryBatch]] = relationship(
+        back_populates="product"
+    )
