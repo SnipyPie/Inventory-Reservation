@@ -2,7 +2,27 @@ from app.services import product_service
 from decimal import Decimal, InvalidOperation
 from app.services import inventory_service, product_service
 from datetime import date
+from app.services.inventory_service import get_inventory_summary_by_name
 
+
+def show_inventory_summary():
+    name = input("Enter a product name to search: ").strip()
+
+    rows = get_inventory_summary_by_name(name)
+
+    if not rows:
+        print("No matching products found.")
+        return
+
+    for row in rows:
+        print(
+             f"ID: {row['product_id']} | Name: {row['name']} | "
+            f"SKU: {row['sku']} | "
+            f"Available: {row['available_quantity']} | "
+            f"Expired: {row['expired_quantity']} | "
+            f"Total: {row['total_quantity']} | "
+            f"Batches: {row['batch_count']}"
+        )
 def display_product(product):
     print(
         f"ID: {product.id} | Name: {product.name} | "

@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 from app.database.database import engine
 from app.models.inventory_batch import InventoryBatch
 from app.models.product import Product
-
+from sqlalchemy import case, func, select
 
 def add_inventory_batch(
     product_id: int,
@@ -41,3 +41,54 @@ def add_inventory_batch(
         session.refresh(batch)
 
         return batch
+def get_inventory_summary_by_name(name: str):
+    search_name = name.strip()
+
+    if not search_name:
+        raise ValueError("Search name cannot be empty.")
+
+    today = date.today()
+
+    available_quantity = func.coalesce(
+        func.sum(
+            case(
+                (InventoryBatch.expiry_date >= today, InventoryBatch.quantity),
+                else_=0,
+            )
+        ),
+        0,
+    ).label("available_quantity")
+
+    expired_quantity = func.coalesce(
+        func.sum(
+            case(
+                (InventoryBatch.expiry_date < today, InventoryBatch.quantity),
+                else_=0,
+            )
+        ),
+        0,
+    ).label("expired_quantity")
+
+    total_quantity = func.coalesce(
+        func.sum(InventoryBatch.quantity),
+        0,
+    ).label("total_quantity")
+    batch_count = func.count(InventoryBatch.id).label("batch_count")
+    statement = (
+        select(
+            Product.id.label("product_id"),
+            Product.name,
+            Product.sku,
+            available_quantity,
+            expired_quantity,
+            total_quantity,
+            batch_count,
+        )
+        .outerjoin(InventoryBatch, InventoryBatch.product_id == Product.id)
+        .where(func.lower(Product.name).contains(search_name.lower()))
+        .group_by(Product.id, Product.name, Product.sku)
+        .order_by(Product.name, Product.sku)
+    )
+
+    with Session(engine) as session:
+        return session.execute(statement).mappings().all()
