@@ -31,7 +31,6 @@ def create_product(
         sku=sku,
         price=price,
         shelf_life_days=shelf_life_days,
-        quantity=0,
     )
 
     with Session(engine) as session:
@@ -60,19 +59,22 @@ def get_all_products():
         statement = select(Product).order_by(Product.id)
         return session.scalars(statement).all()
 
-def delete_product(product_id: int):
+def delete_product(product_id: int) -> str:
     with Session(engine) as session:
         product = session.get(Product, product_id)
 
         if product is None:
-            return False
+            return "not_found"
+
+        if product.inventory_batches:
+            return "has_batches"
 
         session.delete(product)
         session.commit()
-        return True
+        return "deleted"
 
 def update_product(product_id: int, updates: dict):
-    allowed_fields = {"name", "price", "quantity", "sku"}
+    allowed_fields = {"name", "price", "sku", "shelf_life_days"}
     updates = {
         key: value
         for key, value in updates.items()
@@ -92,8 +94,14 @@ def update_product(product_id: int, updates: dict):
     if "price" in updates:
         if not isinstance(updates["price"], (int, float)):
             raise ValueError("Price must be numeric")
-        if updates["price"] < 0 or not updates["price"]:
-            raise ValueError("Price cannot be negative or empty")
+        if updates["price"] < 0:
+            raise ValueError("Price cannot be negative.")
+
+    if "shelf_life_days" in updates:
+        if not isinstance(updates["shelf_life_days"], int):
+            raise ValueError("Shelf life must be a whole number.")
+        if updates["shelf_life_days"] <= 0:
+            raise ValueError("Shelf life must be greater than zero.")
         
     with Session(engine) as session:
         product = session.get(Product, product_id)

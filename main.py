@@ -5,7 +5,10 @@ from actions import (
     list_products_action,
     update_product_action,
     add_inventory_batch_action,
-    show_inventory_summary
+    show_inventory_summary,
+    list_inventory_batches_action,
+    update_inventory_batch_action,
+    delete_inventory_batch_action
 )
 
 
@@ -18,7 +21,10 @@ def cli():
         print("5. Update product details")
         print("6. Add inventory batch")
         print("7. Show inventory summary")
-        print("8. Exit")
+        print("8. List inventory batches")
+        print("9. Update inventory batch")
+        print("10. Delete inventory batch")
+        print("11. Exit")
 
         choice = input("Select your preference: ")
 
@@ -36,7 +42,13 @@ def cli():
             add_inventory_batch_action()
         elif choice == "7":
             show_inventory_summary()
-        elif choice=="8":
+        elif choice == "8":
+            list_inventory_batches_action()
+        elif choice == "9":
+            update_inventory_batch_action()
+        elif choice == "10":
+            delete_inventory_batch_action()
+        elif choice == "11":
             break
         else:
             print("Invalid choice.")

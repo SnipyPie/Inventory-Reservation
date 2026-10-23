@@ -10,8 +10,7 @@ from sqlalchemy import case, func, select
 def add_inventory_batch(
     product_id: int,
     quantity: int,
-    stock_in_date: date | None = None,
-):
+    stock_in_date: date | None = None,):
     if quantity <= 0:
         raise ValueError("Batch quantity must be greater than zero.")
 
@@ -35,12 +34,69 @@ def add_inventory_batch(
             expiry_date=expiry_date,
         )
 
-        product.quantity += quantity
         session.add(batch)
         session.commit()
         session.refresh(batch)
 
         return batch
+
+def update_inventory_batch(
+    batch_id: int,
+    quantity: int | None = None,
+    stock_in_date: date | None = None,
+):
+    if quantity is not None and quantity <= 0:
+        raise ValueError("Batch quantity must be greater than zero.")
+
+    with Session(engine) as session:
+        batch = session.get(InventoryBatch, batch_id)
+
+        if batch is None:
+            return None
+
+        product = session.get(Product, batch.product_id)
+
+        if quantity is not None:
+            batch.quantity = quantity
+
+        if stock_in_date is not None:
+            batch.stock_in_date = stock_in_date
+
+        batch.expiry_date = batch.stock_in_date + timedelta(
+            days=product.shelf_life_days
+        )
+
+        session.commit()
+        session.refresh(batch)
+        return batch
+
+def delete_inventory_batch(batch_id: int) -> bool:
+    with Session(engine) as session:
+        batch = session.get(InventoryBatch, batch_id)
+
+        if batch is None:
+            return False
+
+        session.delete(batch)
+        session.commit()
+        return True
+    
+def get_inventory_batches_by_name(name: str):
+    search_name = name.strip()
+
+    if not search_name:
+        raise ValueError("Search name cannot be empty.")
+
+    statement = (
+        select(InventoryBatch, Product.name, Product.sku)
+        .join(Product, InventoryBatch.product_id == Product.id)
+        .where(func.lower(Product.name).contains(search_name.lower()))
+        .order_by(Product.name, Product.sku, InventoryBatch.id)
+    )
+
+    with Session(engine) as session:
+        return session.execute(statement).all()
+    
 def get_inventory_summary_by_name(name: str):
     search_name = name.strip()
 
