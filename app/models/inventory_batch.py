@@ -14,10 +14,17 @@ if TYPE_CHECKING:
 class InventoryBatch(Base):
     __tablename__ = "inventory_batches"
     __table_args__ = (
-        CheckConstraint("quantity >= 0", name="ck_batches_quantity_nonnegative"),
         CheckConstraint(
             "expiry_date >= stock_in_date",
             name="ck_batches_expiry_after_stock_in",
+        ),
+        CheckConstraint(
+        "quantity_received >= 0",
+        name="ck_batches_quantity_received_nonnegative",
+        ),
+        CheckConstraint(
+            "quantity_remaining >= 0",
+            name="ck_batches_quantity_remaining_nonnegative",
         ),
     )
 
@@ -28,7 +35,8 @@ class InventoryBatch(Base):
         ForeignKey("products.id", ondelete="RESTRICT"),
         nullable=False,
     )
-    quantity: Mapped[int] = mapped_column(Integer, nullable=False)
+    quantity_received: Mapped[int] = mapped_column(Integer, nullable=False)
+    quantity_remaining: Mapped[int] = mapped_column(Integer, nullable=False)
     stock_in_date: Mapped[date] = mapped_column(
         Date,
         nullable=False,

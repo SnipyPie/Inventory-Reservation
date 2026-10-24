@@ -29,7 +29,8 @@ def add_inventory_batch(
 
         batch = InventoryBatch(
             product_id=product.id,
-            quantity=quantity,
+            quantity_received=quantity,
+            quantity_remaining=quantity,
             stock_in_date=stock_in_date,
             expiry_date=expiry_date,
         )
@@ -57,7 +58,7 @@ def update_inventory_batch(
         product = session.get(Product, batch.product_id)
 
         if quantity is not None:
-            batch.quantity = quantity
+            batch.quantity_remaining = quantity
 
         if stock_in_date is not None:
             batch.stock_in_date = stock_in_date
@@ -108,7 +109,7 @@ def get_inventory_summary_by_name(name: str):
     available_quantity = func.coalesce(
         func.sum(
             case(
-                (InventoryBatch.expiry_date >= today, InventoryBatch.quantity),
+                (InventoryBatch.expiry_date >= today, InventoryBatch.quantity_remaining),
                 else_=0,
             )
         ),
@@ -118,7 +119,7 @@ def get_inventory_summary_by_name(name: str):
     expired_quantity = func.coalesce(
         func.sum(
             case(
-                (InventoryBatch.expiry_date < today, InventoryBatch.quantity),
+                (InventoryBatch.expiry_date < today, InventoryBatch.quantity_remaining),
                 else_=0,
             )
         ),
@@ -126,7 +127,7 @@ def get_inventory_summary_by_name(name: str):
     ).label("expired_quantity")
 
     total_quantity = func.coalesce(
-        func.sum(InventoryBatch.quantity),
+        func.sum(InventoryBatch.quantity_remaining),
         0,
     ).label("total_quantity")
     batch_count = func.count(InventoryBatch.id).label("batch_count")

@@ -3,7 +3,86 @@ from decimal import Decimal, InvalidOperation
 from app.services import inventory_service, product_service
 from datetime import date
 from app.services.inventory_service import get_inventory_summary_by_name
+from getpass import getpass
+from app.services import user_service
+from app.services import wallet_service
 
+def show_wallet_balance_action(user_id: int):
+    balance = wallet_service.get_wallet_balance(user_id)
+
+    if balance is None:
+        print("No wallet was found for this user.")
+        return
+
+    print(f"Your wallet balance is: {balance:.2f}")
+
+def deposit_to_wallet_action(user_id: int):
+    amount_text = input("Enter the deposit amount: ").strip()
+
+    try:
+        amount = Decimal(amount_text)
+    except InvalidOperation:
+        print("Please enter a valid number.")
+        return
+
+    try:
+        new_balance = wallet_service.deposit_to_wallet(user_id, amount)
+    except ValueError as error:
+        print(error)
+        return
+
+    print(f"Deposit recorded. New balance: {new_balance:.2f}")
+    
+def signup_user_action():
+    email = input("Enter your email: ").strip()
+    password = getpass("Create a password: ")
+    confirm_password = getpass("Confirm your password: ")
+
+    if password != confirm_password:
+        print("The passwords do not match.")
+        return
+
+    try:
+        user = user_service.register_user(email, password)
+    except ValueError as error:
+        print(error)
+        return None
+
+    print(f"Account created. Your user ID is {user.id}.")
+    print("Please log in before buying.")
+    return user
+
+def login_or_signup_action():
+    while True:
+        email = input("Enter your email: ").strip()
+        password = getpass("Enter your password: ")
+
+        try:
+            user, status = user_service.authenticate_user(email, password)
+        except ValueError as error:
+            print(error)
+            continue
+
+        if status == "not_found":
+            print("No account found for that email. Please sign up.")
+            new_user = signup_user_action()
+
+            if new_user is None:
+                return None
+
+            print("Now log in with your new account.")
+            continue
+
+        if status == "wrong_password":
+            print("Incorrect password. Try again.")
+            continue
+
+        if status == "invalid_hash":
+            print("Could not verify the saved password for this account.")
+            return None
+
+        print(f"Login successful. Welcome, {user.email}.")
+        return user
 
 def show_inventory_summary():
     name = input("Enter a product name to search: ").strip()
@@ -41,7 +120,8 @@ def list_inventory_batches_action():
     for batch, product_name, sku in rows:
         print(
             f"Batch ID: {batch.id} | Product: {product_name} | "
-            f"SKU: {sku} | Quantity: {batch.quantity} | "
+            f"SKU: {sku} | Received: {batch.quantity_received} | "
+            f"Remaining: {batch.quantity_remaining} | "
             f"Stocked: {batch.stock_in_date} | "
             f"Expires: {batch.expiry_date}"
         )
@@ -113,7 +193,8 @@ def update_inventory_batch_action():
     for batch, product_name, sku in rows:
         print(
             f"Batch ID: {batch.id} | Product: {product_name} | "
-            f"SKU: {sku} | Quantity: {batch.quantity} | "
+            f"SKU: {sku} | Received: {batch.quantity_received} | "
+            f"Remaining: {batch.quantity_remaining} | "
             f"Stocked: {batch.stock_in_date} | "
             f"Expires: {batch.expiry_date}"
         )
@@ -170,7 +251,7 @@ def update_inventory_batch_action():
         return
 
     print(
-        f"Batch {batch.id} updated. Quantity: {batch.quantity} | "
+        f"Batch {batch.id} updated. Remaining: {batch.quantity_remaining} | "
         f"Stocked: {batch.stock_in_date} | Expires: {batch.expiry_date}"
     )
 
@@ -190,7 +271,8 @@ def delete_inventory_batch_action():
     for batch, product_name, sku in rows:
         print(
             f"Batch ID: {batch.id} | Product: {product_name} | "
-            f"SKU: {sku} | Quantity: {batch.quantity} | "
+            f"SKU: {sku} | Received: {batch.quantity_received} | "
+            f"Remaining: {batch.quantity_remaining} | "
             f"Stocked: {batch.stock_in_date} | "
             f"Expires: {batch.expiry_date}"
         )
