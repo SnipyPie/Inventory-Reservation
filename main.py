@@ -11,7 +11,8 @@ from actions import (
     delete_inventory_batch_action,
     login_or_signup_action,
     show_wallet_balance_action,
-    deposit_to_wallet_action
+    deposit_to_wallet_action,
+    buy_product_action
 )
 
 
@@ -32,7 +33,8 @@ def cli():
         print("11. Customer login / sign up")
         print("12. Deposit into logged-in customer's wallet")
         print("13. Customer logout")
-        print("14. Exit")
+        print("14. Buy Product")
+        print("15. Exit")
 
         choice = input("Select your preference: ")
 
@@ -69,7 +71,13 @@ def cli():
         elif choice == "13":
             current_user = None
             print("Customer logged out.")
-        elif choice == "14":
+        elif choice=="14":
+            if current_user is None:
+                print("Please log in first.")
+            else:
+                buy_product_action(current_user.id)
+
+        elif choice == "15":
             break
         else:
             print("Invalid choice.")

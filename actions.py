@@ -6,6 +6,35 @@ from app.services.inventory_service import get_inventory_summary_by_name
 from getpass import getpass
 from app.services import user_service
 from app.services import wallet_service
+from app.services import purchase_service
+
+def buy_product_action(user_id: int):
+    try:
+        product_id = int(input("Enter the product ID to buy: ").strip())
+    except ValueError:
+        print("Product ID must be a whole number.")
+        return
+
+    try:
+        quantity = int(input("Enter the quantity to buy: ").strip())
+    except ValueError:
+        print("Quantity must be a whole number.")
+        return
+
+    try:
+        order_id, total, new_balance = purchase_service.purchase_product(
+            user_id,
+            product_id,
+            quantity,
+        )
+    except ValueError as error:
+        print(f"Purchase failed: {error}")
+        return
+
+    print(f"Successfully purchased {quantity} units.")
+    print(f"Total price paid: {total:.2f}")
+    print(f"Order ID: {order_id}")
+    print(f"Remaining wallet balance: {new_balance:.2f}")
 
 def show_wallet_balance_action(user_id: int):
     balance = wallet_service.get_wallet_balance(user_id)
