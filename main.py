@@ -12,7 +12,8 @@ from actions import (
     login_or_signup_action,
     show_wallet_balance_action,
     deposit_to_wallet_action,
-    buy_product_action
+    buy_product_action,
+    show_order_history_action
 )
 
 
@@ -88,8 +89,9 @@ def cli():
             print("1. Check wallet balance")
             print("2. Top up wallet")
             print("3. Buy product")
-            print("4. Log out")
-            print("5. Exit")
+            print("4. View order history")
+            print("5. Log out")
+            print("6. Exit")
 
             choice = input("Select your preference: ").strip()
 
@@ -100,9 +102,11 @@ def cli():
             elif choice == "3":
                 buy_product_action(current_user.id)
             elif choice == "4":
+                show_order_history_action(current_user.id)
+            elif choice == "5":
                 current_user = None
                 print("Logged out.")
-            elif choice == "5":
+            elif choice == "6":
                 break
             else:
                 print("Invalid choice.")

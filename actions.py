@@ -7,6 +7,7 @@ from getpass import getpass
 from app.services import user_service
 from app.services import wallet_service
 from app.services import purchase_service
+from app.services import order_service
 
 def buy_product_action(user_id: int):
     name = input("Enter the product name to buy: ").strip()
@@ -73,6 +74,32 @@ def show_wallet_balance_action(user_id: int):
 
     print(f"Your wallet balance is: {balance:.2f}")
 
+def show_order_history_action(user_id: int):
+    rows = order_service.get_customer_order_history(user_id)
+
+    if not rows:
+        print("You have no orders yet.")
+        return
+
+    current_order_id = None
+
+    for row in rows:
+        if row.order_id != current_order_id:
+            current_order_id = row.order_id
+            print(
+                f"\nOrder ID: {row.order_id} | "
+                f"Date: {row.created_at} | "
+                f"Total: {row.total_amount:.2f}"
+            )
+
+        item_total = row.quantity * row.unit_price
+        print(
+            f"  {row.quantity} x {row.product_name} "
+            f"(SKU: {row.sku}) | "
+            f"Unit price: {row.unit_price:.2f} | "
+            f"Item total: {item_total:.2f}"
+        )
+        
 def deposit_to_wallet_action(user_id: int):
     amount_text = input("Enter the deposit amount: ").strip()
 
