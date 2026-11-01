@@ -99,6 +99,28 @@ def show_order_history_action(user_id: int):
             f"Unit price: {row.unit_price:.2f} | "
             f"Item total: {item_total:.2f}"
         )
+
+def show_wallet_transactions_action(user_id: int):
+    transactions = wallet_service.get_wallet_transactions(user_id)
+
+    if not transactions:
+        print("You have no wallet transactions yet.")
+        return
+
+    print("\nWallet transaction history:")
+
+    for transaction in transactions:
+        change = transaction.amount
+
+        if transaction.transaction_type == "purchase":
+            change = -change
+
+        print(
+            f"ID: {transaction.id} | "
+            f"Type: {transaction.transaction_type.title()} | "
+            f"Change: {change:+.2f} | "
+            f"Date: {transaction.created_at}"
+        )
         
 def deposit_to_wallet_action(user_id: int):
     amount_text = input("Enter the deposit amount: ").strip()

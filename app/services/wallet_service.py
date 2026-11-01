@@ -47,3 +47,22 @@ def deposit_to_wallet(user_id: int, amount: Decimal):
         session.refresh(wallet)
 
         return wallet.balance
+    
+def get_wallet_transactions(user_id: int):
+    with Session(engine) as session:
+        statement = (
+            select(
+                WalletTransaction.id,
+                WalletTransaction.transaction_type,
+                WalletTransaction.amount,
+                WalletTransaction.created_at,
+            )
+            .join(Wallet, Wallet.id == WalletTransaction.wallet_id)
+            .where(Wallet.user_id == user_id)
+            .order_by(
+                WalletTransaction.created_at.desc(),
+                WalletTransaction.id.desc(),
+            )
+        )
+
+        return session.execute(statement).all()
