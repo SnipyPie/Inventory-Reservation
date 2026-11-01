@@ -9,11 +9,39 @@ from app.services import wallet_service
 from app.services import purchase_service
 
 def buy_product_action(user_id: int):
-    try:
-        product_id = int(input("Enter the product ID to buy: ").strip())
-    except ValueError:
-        print("Product ID must be a whole number.")
+    name = input("Enter the product name to buy: ").strip()
+
+    matching_products = product_service.get_products_by_name(name)
+
+    if not matching_products:
+        print("No products found with that name.")
         return
+
+    if len(matching_products) == 1:
+        product_id = matching_products[0].id
+        print(
+            f"Selected {matching_products[0].name} "
+            f"(ID: {product_id}, SKU: {matching_products[0].sku})."
+        )
+    else:
+        print("Multiple products match that name:")
+        for product in matching_products:
+            print(
+                f"ID: {product.id} | Name: {product.name} | "
+                f"SKU: {product.sku} | Price: {product.price}"
+            )
+
+        try:
+            product_id = int(
+                input("Enter the ID of the product to buy: ").strip()
+            )
+        except ValueError:
+            print("Product ID must be a whole number.")
+            return
+
+        if not any(product.id == product_id for product in matching_products):
+            print("Please choose an ID from the products listed above.")
+            return
 
     try:
         quantity = int(input("Enter the quantity to buy: ").strip())
@@ -275,6 +303,10 @@ def update_inventory_batch_action():
         print(error)
         return
 
+    if batch == "deleted":
+        print(f"Batch {batch_id} had zero remaining quantity and was deleted.")
+        return
+    
     if batch is None:
         print("Batch not found.")
         return

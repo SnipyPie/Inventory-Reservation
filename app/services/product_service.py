@@ -45,6 +45,11 @@ def get_product(product_id: int):
         return session.get(Product, product_id)
     
 def get_products_by_name(name: str):
+    name = name.strip()
+
+    if not name:
+        return []
+
     with Session(engine) as session:
         statement = (
             select(Product)

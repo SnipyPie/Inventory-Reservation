@@ -64,10 +64,10 @@ class OrderItem(Base):
         ForeignKey("products.id"),
         nullable=False,
     )
-    inventory_batch_id: Mapped[int] = mapped_column(
+    inventory_batch_id: Mapped[int | None] = mapped_column(
         Integer,
-        ForeignKey("inventory_batches.id"),
-        nullable=False,
+        ForeignKey("inventory_batches.id", ondelete="SET NULL"),
+        nullable=True,
     )
     quantity: Mapped[int] = mapped_column(Integer, nullable=False)
     unit_price: Mapped[Decimal] = mapped_column(

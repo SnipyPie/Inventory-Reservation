@@ -46,14 +46,19 @@ def update_inventory_batch(
     quantity: int | None = None,
     stock_in_date: date | None = None,
 ):
-    if quantity is not None and quantity <= 0:
-        raise ValueError("Batch quantity must be greater than zero.")
+    if quantity is not None and quantity < 0:
+        raise ValueError("Batch quantity cannot be negative.")
 
     with Session(engine) as session:
         batch = session.get(InventoryBatch, batch_id)
 
         if batch is None:
             return None
+
+        if quantity == 0:
+            session.delete(batch)
+            session.commit()
+            return "deleted"
 
         product = session.get(Product, batch.product_id)
 
@@ -70,7 +75,6 @@ def update_inventory_batch(
         session.commit()
         session.refresh(batch)
         return batch
-
 def delete_inventory_batch(batch_id: int) -> bool:
     with Session(engine) as session:
         batch = session.get(InventoryBatch, batch_id)

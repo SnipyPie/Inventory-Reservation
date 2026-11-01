@@ -104,9 +104,10 @@ def _calculate_purchase_total(
     return total
 
 def purchase_product(
-user_id: int,
-product_id: int,
-quantity: int,):
+    user_id: int,
+    product_id: int,
+    quantity: int,
+):
     if not isinstance(quantity, int) or isinstance(quantity, bool) or quantity <= 0:
         raise ValueError("Quantity must be a positive whole number.")
 
@@ -125,6 +126,8 @@ quantity: int,):
         session.add(order)
         session.flush()
 
+        exhausted_batches = []
+
         for batch, quantity_from_batch in allocations:
             batch.quantity_remaining -= quantity_from_batch
 
@@ -136,6 +139,15 @@ quantity: int,):
                 unit_price=product.price,
             )
             session.add(order_item)
+
+            if batch.quantity_remaining == 0:
+                exhausted_batches.append(batch)
+
+        # Save order items before deleting batches they reference.
+        session.flush()
+
+        for batch in exhausted_batches:
+            session.delete(batch)
 
         wallet.balance -= total
 
