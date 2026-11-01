@@ -20,68 +20,92 @@ def cli():
     current_user = None
 
     while True:
-        print("\n1. Create product")
-        print("2. Get product by ID or name")
-        print("3. Get all products")
-        print("4. Delete a product")
-        print("5. Update product details")
-        print("6. Add inventory batch")
-        print("7. Show inventory summary")
-        print("8. List inventory batches")
-        print("9. Update inventory batch")
-        print("10. Delete inventory batch")
-        print("11. Customer login / sign up")
-        print("12. Deposit into logged-in customer's wallet")
-        print("13. Customer logout")
-        print("14. Buy Product")
-        print("15. Exit")
+        if current_user is None:
+            print("\n1. Customer login / sign up")
+            print("2. Exit")
+            choice = input("Select your preference: ").strip()
 
-        choice = input("Select your preference: ")
+            if choice == "1":
+                current_user = login_or_signup_action()
 
-        if choice == "1":
-            create_product_action()
-        elif choice == "2":
-            get_product_action()
-        elif choice == "3":
-            list_products_action()
-        elif choice == "4":
-            delete_product_action()
-        elif choice == "5":
-            update_product_action()
-        elif choice == "6":
-            add_inventory_batch_action()
-        elif choice == "7":
-            show_inventory_summary()
-        elif choice == "8":
-            list_inventory_batches_action()
-        elif choice == "9":
-            update_inventory_batch_action()
-        elif choice == "10":
-            delete_inventory_batch_action()
-        elif choice == "11":
-            user = login_or_signup_action()
-            if user is not None:
-                current_user = user
-                show_wallet_balance_action(current_user.id)
-        elif choice == "12":
-            if current_user is None:
-                print("Please log in first.")
+                if current_user is not None and current_user.role == "customer":
+                    show_wallet_balance_action(current_user.id)
+
+            elif choice == "2":
+                break
             else:
-                deposit_to_wallet_action(current_user.id)
-        elif choice == "13":
-            current_user = None
-            print("Customer logged out.")
-        elif choice=="14":
-            if current_user is None:
-                print("Please log in first.")
-            else:
-                buy_product_action(current_user.id)
+                print("Invalid choice.")
 
-        elif choice == "15":
-            break
+            continue
+
+        if current_user.role == "admin":
+            print("\n--- Administrator Menu ---")
+            print("1. Create product")
+            print("2. Get product by ID or name")
+            print("3. Get all products")
+            print("4. Delete a product")
+            print("5. Update product details")
+            print("6. Add inventory batch")
+            print("7. Show inventory summary")
+            print("8. List inventory batches")
+            print("9. Update inventory batch")
+            print("10. Delete inventory batch")
+            print("11. Log out")
+            print("12. Exit")
+
+            choice = input("Select your preference: ").strip()
+
+            if choice == "1":
+                create_product_action()
+            elif choice == "2":
+                get_product_action()
+            elif choice == "3":
+                list_products_action()
+            elif choice == "4":
+                delete_product_action()
+            elif choice == "5":
+                update_product_action()
+            elif choice == "6":
+                add_inventory_batch_action()
+            elif choice == "7":
+                show_inventory_summary()
+            elif choice == "8":
+                list_inventory_batches_action()
+            elif choice == "9":
+                update_inventory_batch_action()
+            elif choice == "10":
+                delete_inventory_batch_action()
+            elif choice == "11":
+                current_user = None
+                print("Logged out.")
+            elif choice == "12":
+                break
+            else:
+                print("Invalid choice.")
+
         else:
-            print("Invalid choice.")
+            print("\n--- Customer Menu ---")
+            print("1. Check wallet balance")
+            print("2. Top up wallet")
+            print("3. Buy product")
+            print("4. Log out")
+            print("5. Exit")
 
+            choice = input("Select your preference: ").strip()
+
+            if choice == "1":
+                show_wallet_balance_action(current_user.id)
+            elif choice == "2":
+                deposit_to_wallet_action(current_user.id)
+            elif choice == "3":
+                buy_product_action(current_user.id)
+            elif choice == "4":
+                current_user = None
+                print("Logged out.")
+            elif choice == "5":
+                break
+            else:
+                print("Invalid choice.")
 
 if __name__ == "__main__":
     cli()

@@ -17,3 +17,9 @@ class User(Base):
         nullable=False,
         server_default=func.now(),
     )
+    role: Mapped[str] = mapped_column(
+    String(20),
+    nullable=False,
+    default="customer",
+    server_default="customer",
+    )
