@@ -55,6 +55,11 @@ def update_inventory_batch(
         if batch is None:
             return None
 
+        if quantity is not None and quantity > batch.quantity_received:
+            raise ValueError(
+                "Remaining quantity cannot exceed the quantity received."
+            )
+        
         if quantity == 0:
             session.delete(batch)
             session.commit()
@@ -113,7 +118,7 @@ def get_inventory_summary_by_name(name: str):
     available_quantity = func.coalesce(
         func.sum(
             case(
-                (InventoryBatch.expiry_date >= today, InventoryBatch.quantity_remaining),
+                ((InventoryBatch.stock_in_date <= today)& (InventoryBatch.expiry_date >= today),InventoryBatch.quantity_remaining,),
                 else_=0,
             )
         ),

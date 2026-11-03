@@ -26,6 +26,10 @@ class InventoryBatch(Base):
             "quantity_remaining >= 0",
             name="ck_batches_quantity_remaining_nonnegative",
         ),
+        CheckConstraint(
+            "quantity_remaining <= quantity_received",
+            name="ck_batches_remaining_lte_received",
+        ),
     )
 
     # The database generates each batch ID.

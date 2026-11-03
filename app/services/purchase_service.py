@@ -21,6 +21,7 @@ def _get_available_batches_for_update(
         .where(
             InventoryBatch.product_id == product_id,
             InventoryBatch.quantity_remaining > 0,
+            InventoryBatch.stock_in_date <= today,
             InventoryBatch.expiry_date >= today,
         )
         .order_by(

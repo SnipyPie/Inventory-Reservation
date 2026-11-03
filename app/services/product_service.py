@@ -1,8 +1,37 @@
 from decimal import Decimal
 from app.models.product import Product
+from app.models.order import OrderItem
 from sqlalchemy.orm import Session
 from app.database.database import engine
 from sqlalchemy import select, func
+from sqlalchemy.exc import IntegrityError
+
+
+def _is_duplicate_sku_error(error: IntegrityError) -> bool:
+    constraint_name = getattr(
+        getattr(error.orig, "diag", None),
+        "constraint_name",
+        None,
+    )
+    sqlite_message = str(error.orig).lower()
+    return (
+        constraint_name == "products_sku_key"
+        or "unique constraint failed: products.sku" in sqlite_message
+    )
+
+
+def _validate_price(price: Decimal) -> None:
+    if not isinstance(price, Decimal) or not price.is_finite():
+        raise ValueError("Price must be a valid decimal number.")
+
+    if price < 0:
+        raise ValueError("Price cannot be negative.")
+
+    if price > Decimal("99999999.99"):
+        raise ValueError("Price is too large.")
+
+    if price != price.quantize(Decimal("0.01")):
+        raise ValueError("Price can have at most two decimal places.")
 
 
 def create_product(
@@ -20,8 +49,7 @@ def create_product(
     if not sku:
         raise ValueError("Product SKU cannot be empty.")
 
-    if price < 0:
-        raise ValueError("Price cannot be negative.")
+    _validate_price(price)
 
     if shelf_life_days <= 0:
         raise ValueError("Shelf life must be greater than zero.")
@@ -35,7 +63,13 @@ def create_product(
 
     with Session(engine) as session:
         session.add(product)
-        session.commit()
+        try:
+            session.commit()
+        except IntegrityError as error:
+            session.rollback()
+            if _is_duplicate_sku_error(error):
+                raise ValueError("That SKU already exists.") from error
+            raise
         session.refresh(product)
 
     return product
@@ -71,6 +105,15 @@ def delete_product(product_id: int) -> str:
         if product is None:
             return "not_found"
 
+        past_order_item = session.scalar(
+            select(OrderItem.id)
+            .where(OrderItem.product_id == product_id)
+            .limit(1)
+        )
+
+        if past_order_item is not None:
+            return "has_orders"
+
         if product.inventory_batches:
             return "has_batches"
 
@@ -97,10 +140,7 @@ def update_product(product_id: int, updates: dict):
             raise ValueError("Product sku cannot be empty.")
     
     if "price" in updates:
-        if not isinstance(updates["price"], (int, float)):
-            raise ValueError("Price must be numeric")
-        if updates["price"] < 0:
-            raise ValueError("Price cannot be negative.")
+        _validate_price(updates["price"])
 
     if "shelf_life_days" in updates:
         if not isinstance(updates["shelf_life_days"], int):
@@ -118,6 +158,12 @@ def update_product(product_id: int, updates: dict):
             if field in allowed_fields:
                 setattr(product, field, value)
 
-        session.commit()
+        try:
+            session.commit()
+        except IntegrityError as error:
+            session.rollback()
+            if _is_duplicate_sku_error(error):
+                raise ValueError("That SKU already exists.") from error
+            raise
         session.refresh(product)
         return product

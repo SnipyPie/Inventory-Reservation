@@ -194,7 +194,11 @@ def show_inventory_summary():
     name = input("Enter a product name to search: ").strip()
     '''
     Fetches the Product from the Inventory and displays all its skus and '''
-    rows = get_inventory_summary_by_name(name)
+    try:
+        rows = get_inventory_summary_by_name(name)
+    except ValueError:
+        print("Enter a product name or return to the main menu.")
+        return
 
     if not rows:
         print("No matching products found.")
@@ -422,6 +426,8 @@ def display_product(product):
 def report_product_delete_result(result):
     if result == "deleted":
         print("Product deleted successfully.")
+    elif result == "has_orders":
+        print("This product has past orders and cannot be deleted.")
     elif result == "has_batches":
         print(
             "Cannot delete this product because it has inventory batches. "
@@ -429,6 +435,14 @@ def report_product_delete_result(result):
         )
     else:
         print("Product not found.")
+
+
+def _prompt_for_whole_number(prompt: str) -> int:
+    while True:
+        try:
+            return int(input(prompt).strip())
+        except ValueError:
+            print("Enter a whole number.")
 
 def create_product_action():
     name = input("Enter the product name: ")
@@ -438,10 +452,6 @@ def create_product_action():
         price = Decimal(input("Enter price: "))
     except InvalidOperation:
         print("Price must be a number.")
-        return
-
-    if price < 0:
-        print("Price cannot be negative.")
         return
 
     try:
@@ -466,7 +476,7 @@ def get_product_action():
     search_by = input("Search by (1) ID or (2) name? ")
 
     if search_by == "1":
-        product_id = int(input("Enter the product ID: "))
+        product_id = _prompt_for_whole_number("Enter the product ID: ")
         product = product_service.get_product(product_id)
 
         if product:
@@ -543,7 +553,7 @@ def update_product_action():
     product_id = None
 
     if update_by == "1":
-        product_id = int(input("Enter the product ID: "))
+        product_id = _prompt_for_whole_number("Enter the product ID: ")
 
     elif update_by == "2":
         name = input("Which product do you want to update? ")
@@ -556,7 +566,7 @@ def update_product_action():
         for product in matching_products:
             display_product(product)
 
-        selected_id = int(input("Enter the ID you want to update: "))
+        selected_id = _prompt_for_whole_number("Enter the ID you want to update: ")
 
         if any(product.id == selected_id for product in matching_products):
             product_id = selected_id
@@ -591,8 +601,8 @@ def update_product_action():
 
         elif update_choice == "2":
             try:
-                updates["price"] = float(input("Enter the updated price: "))
-            except ValueError:
+                updates["price"] = Decimal(input("Enter the updated price: "))
+            except InvalidOperation:
                 print("Price must be a number.")
 
         elif update_choice == "3":
