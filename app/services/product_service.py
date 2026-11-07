@@ -77,6 +77,16 @@ def create_product(
 def get_product(product_id: int):
     with Session(engine) as session:
         return session.get(Product, product_id)
+
+def get_product_by_sku(sku: str):
+    sku = sku.strip()
+
+    if not sku:
+        return None
+
+    with Session(engine) as session:
+        statement = select(Product).where(Product.sku == sku)
+        return session.scalar(statement)
     
 def get_products_by_name(name: str):
     name = name.strip()
