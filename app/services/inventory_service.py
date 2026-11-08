@@ -158,3 +158,61 @@ def get_inventory_summary_by_name(name: str):
 
     with Session(engine) as session:
         return session.execute(statement).mappings().all()
+
+def get_all_inventory_summary():
+    today = date.today()
+
+    available_quantity = func.coalesce(
+        func.sum(
+            case(
+                (
+                    (InventoryBatch.stock_in_date <= today)
+                    & (InventoryBatch.expiry_date >= today),
+                    InventoryBatch.quantity_remaining,
+                ),
+                else_=0,
+            )
+        ),
+        0,
+    ).label("available_quantity")
+
+    expired_quantity = func.coalesce(
+        func.sum(
+            case(
+                (
+                    InventoryBatch.expiry_date < today,
+                    InventoryBatch.quantity_remaining,
+                ),
+                else_=0,
+            )
+        ),
+        0,
+    ).label("expired_quantity")
+
+    total_quantity = func.coalesce(
+        func.sum(InventoryBatch.quantity_remaining),
+        0,
+    ).label("total_quantity")
+
+    batch_count = func.count(InventoryBatch.id).label("batch_count")
+
+    statement = (
+        select(
+            Product.id.label("product_id"),
+            Product.name,
+            Product.sku,
+            available_quantity,
+            expired_quantity,
+            total_quantity,
+            batch_count,
+        )
+        .outerjoin(
+            InventoryBatch,
+            InventoryBatch.product_id == Product.id,
+        )
+        .group_by(Product.id, Product.name, Product.sku)
+        .order_by(Product.name, Product.sku)
+    )
+
+    with Session(engine) as session:
+        return session.execute(statement).mappings().all()
